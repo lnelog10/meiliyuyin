@@ -21,6 +21,12 @@ def load_data(image_path, flip=True, is_test=False):
     return img_AB
     # return img_A
 
+def imageName2VoiceName(imageName):
+    fileName = imageName[imageName.rindex("/")+1:]
+    temp = fileName.split('.')
+    result = "./datasets/first_run/"+temp[0]+".txt"
+    return result
+
 def load_image(image_path):
     input_img = imread(image_path)
     # print("input_image shape",input_img.shape)
