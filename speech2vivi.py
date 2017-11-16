@@ -218,7 +218,9 @@ class speech2vivi(object):
         for epoch in xrange(args.epoch):
             # data = glob('./datasets/{}/train/*.jpg'.format(self.dataset_name))
             #np.random.shuffle(data)
-            data = glob('./datasets/first_run/*.jpg')
+            specifiedImage = imread("./datasets/first_run/random.jpg")
+            print(specifiedImage.shape)
+            data = glob('./datasets/first_run/real_image/*.jpg')
             batch_idxs = min(len(data), args.train_size) // self.batch_size
 
             for idx in xrange(0, batch_idxs):
@@ -242,17 +244,17 @@ class speech2vivi(object):
 
                 # Update G network
                 _, summary_str = self.sess.run([g_optim, self.g_sum],
-                                               feed_dict={ self.real_image: batch_images, self.real_voice:batch_images })
+                                               feed_dict={ self.real_image: batch_images, self.real_voice:voiceData, self.random_image: specifiedImage })
                 self.writer.add_summary(summary_str, counter)
 
                 # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
                 _, summary_str = self.sess.run([g_optim, self.g_sum],
-                                               feed_dict={ self.real_image: batch_images, self.real_voice:batch_images })
+                                               feed_dict={ self.real_image: batch_images, self.real_voice:voiceData, self.random_image: specifiedImage })
                 self.writer.add_summary(summary_str, counter)
 
                 errD_fake = self.d_loss_fake.eval({self.real_image: batch_images})
                 errD_real = self.d_loss_real.eval({self.real_image: batch_images})
-                errG = self.g_loss.eval({self.real_image: batch_images})
+                errG = self.g_loss.eval({self.real_image: batch_images, self.real_voice:voiceData, self.random_image: specifiedImage})
 
                 counter += 1
                 print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f" \
@@ -279,8 +281,8 @@ class speech2vivi(object):
     def sample_model(self, sample_dir, epoch, idx):
         sample_images = self.load_random_samples()
         samples, d_loss, g_loss = self.sess.run(
-            [self.fake_B_sample, self.d_loss, self.g_loss],
-            feed_dict={self.real_data: sample_images}
+            [self.fake_image_sample, self.d_loss, self.g_loss],
+            feed_dict={self.random_image: sample_images}
         )
         save_images(samples, [self.batch_size, 1],
                     './{}/train_{:02d}_{:04d}.png'.format(sample_dir, epoch, idx))

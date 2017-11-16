@@ -48,8 +48,8 @@ def main(_):
                         output_size=args.fine_size, dataset_name=args.dataset_name,
                         checkpoint_dir=args.checkpoint_dir, sample_dir=args.sample_dir)
 
-        # if args.phase == 'train':
-        #     model.train(args)
+        if args.phase == 'train':
+            model.train(args)
         # else:
         #     model.test(args)
 

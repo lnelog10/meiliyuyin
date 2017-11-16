@@ -24,7 +24,7 @@ def load_data(image_path, flip=True, is_test=False):
 def imageName2VoiceName(imageName):
     fileName = imageName[imageName.rindex("/")+1:]
     temp = fileName.split('.')
-    result = "./datasets/first_run/"+temp[0]+".txt"
+    result = "./datasets/first_run/real_voice/"+temp[0]+".txt"
     return result
 
 def load_image(image_path):
