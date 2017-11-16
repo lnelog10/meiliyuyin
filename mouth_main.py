@@ -1,5 +1,6 @@
 import argparse
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import tensorflow as tf
 from speech2vivi import speech2vivi
 
@@ -36,6 +37,7 @@ parser.add_argument('--L1_lambda', dest='L1_lambda', type=float, default=100.0, 
 args = parser.parse_args()
 
 def main(_):
+
     if not os.path.exists(args.checkpoint_dir):
         os.makedirs(args.checkpoint_dir)
     if not os.path.exists(args.sample_dir):

@@ -219,7 +219,10 @@ class speech2vivi(object):
             # data = glob('./datasets/{}/train/*.jpg'.format(self.dataset_name))
             #np.random.shuffle(data)
             specifiedImage = imread("./datasets/first_run/random.jpg")
-            print(specifiedImage.shape)
+            specifiedImage = specifiedImage.reshape(1,112,112,3)
+            specifiedImage = np.array(specifiedImage).astype(np.float32)
+            # specifiedImage = tf.reshape(specifiedImage,[1,112,112,3])
+            print("specifiedImage shape==>",specifiedImage.shape)
             data = glob('./datasets/first_run/real_image/*.jpg')
             batch_idxs = min(len(data), args.train_size) // self.batch_size
 
@@ -232,14 +235,22 @@ class speech2vivi(object):
                 #     batch_images = np.array(batch).astype(np.float32)
                 for batch_file in batch_files:
                     batch_images = imread(batch_file)
+                    batch_images = batch_images.reshape(1,112,112,3)
+                    batch_images = np.array(batch_images).astype(np.float32)
+                    # batch_images = tf.reshape(batch_images,[1,112,112,3])
                     print(batch_images.shape)
+                    print("real_image shape==>",batch_images.shape)
                     voiceName = imageName2VoiceName(batch_file)
-                    print(voiceName)
+                    print("voiceName ==>",voiceName)
                     voiceData = np.loadtxt(voiceName)
-                    print(voiceData.shape)
+                    voiceData = voiceData.reshape(1,13,35,1)
+                    voiceData = np.array(voiceData).astype(np.float32)
+                    print("voiceData shape==>",voiceData.shape)
+                    print(voiceData)
+                    # voiceData = tf.reshape(voiceData,[1,13,35])
                 # Update D network
                 _, summary_str = self.sess.run([d_optim, self.d_sum],
-                                               feed_dict={ self.real_image: batch_images })
+                                               feed_dict={ self.real_image: batch_images, self.real_voice:voiceData, self.random_image: specifiedImage })
                 self.writer.add_summary(summary_str, counter)
 
                 # Update G network
