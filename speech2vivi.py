@@ -246,7 +246,7 @@ class speech2vivi(object):
                     voiceData = voiceData.reshape(1,13,35,1)
                     voiceData = np.array(voiceData).astype(np.float32)
                     print("voiceData shape==>",voiceData.shape)
-                    print(voiceData)
+                    # print(voiceData)
                     # voiceData = tf.reshape(voiceData,[1,13,35])
                 # Update D network
                 _, summary_str = self.sess.run([d_optim, self.d_sum],
@@ -263,8 +263,8 @@ class speech2vivi(object):
                                                feed_dict={ self.real_image: batch_images, self.real_voice:voiceData, self.random_image: specifiedImage })
                 self.writer.add_summary(summary_str, counter)
 
-                errD_fake = self.d_loss_fake.eval({self.real_image: batch_images})
-                errD_real = self.d_loss_real.eval({self.real_image: batch_images})
+                errD_fake = self.d_loss_fake.eval({self.real_image: batch_images, self.real_voice:voiceData, self.random_image: specifiedImage})
+                errD_real = self.d_loss_real.eval({self.real_image: batch_images, self.real_voice:voiceData, self.random_image: specifiedImage})
                 errG = self.g_loss.eval({self.real_image: batch_images, self.real_voice:voiceData, self.random_image: specifiedImage})
 
                 counter += 1
