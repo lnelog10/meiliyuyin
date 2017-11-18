@@ -45,21 +45,26 @@ class speech2vivi(object):
         self.d_bn2 = batch_norm(name='d_bn2')
         self.d_bn3 = batch_norm(name='d_bn3')
 
-        self.g_bn_e2 = batch_norm(name='g_bn_e2')
-        self.g_bn_e3 = batch_norm(name='g_bn_e3')
-        self.g_bn_e4 = batch_norm(name='g_bn_e4')
-        self.g_bn_e5 = batch_norm(name='g_bn_e5')
-        self.g_bn_e6 = batch_norm(name='g_bn_e6')
-        self.g_bn_e7 = batch_norm(name='g_bn_e7')
-        self.g_bn_e8 = batch_norm(name='g_bn_e8')
+        self.g_bn_v_e1 = batch_norm(name='g_bn_v_e1')
+        self.g_bn_v_e2 = batch_norm(name='g_bn_v_e2')
+        self.g_bn_v_e3 = batch_norm(name='g_bn_v_e3')
+        self.g_bn_v_e4 = batch_norm(name='g_bn_v_e4')
+        self.g_bn_v_e5 = batch_norm(name='g_bn_v_e5')
 
-        self.g_bn_d1 = batch_norm(name='g_bn_d1')
-        self.g_bn_d2 = batch_norm(name='g_bn_d2')
-        self.g_bn_d3 = batch_norm(name='g_bn_d3')
-        self.g_bn_d4 = batch_norm(name='g_bn_d4')
-        self.g_bn_d5 = batch_norm(name='g_bn_d5')
-        self.g_bn_d6 = batch_norm(name='g_bn_d6')
-        self.g_bn_d7 = batch_norm(name='g_bn_d7')
+        self.g_bn_i_e1 = batch_norm(name='g_bn_i_e1')
+        self.g_bn_i_e2 = batch_norm(name='g_bn_i_e2')
+        self.g_bn_i_e3 = batch_norm(name='g_bn_i_e3')
+        self.g_bn_i_e4 = batch_norm(name='g_bn_i_e4')
+        self.g_bn_i_e5 = batch_norm(name='g_bn_i_e5')
+
+
+        self.g_bn_i_v_e2 = batch_norm(name='g_bn_i_v_e2')
+        self.g_bn_i_v_e3 = batch_norm(name='g_bn_i_v_e3')
+        self.g_bn_i_v_e4 = batch_norm(name='g_bn_i_v_e4')
+        self.g_bn_i_v_e5 = batch_norm(name='g_bn_i_v_e5')
+        self.g_bn_i_v_e6 = batch_norm(name='g_bn_i_v_e6')
+        self.g_bn_i_v_e7 = batch_norm(name='g_bn_i_v_e7')
+
 
         self.dataset_name = dataset_name
         self.checkpoint_dir = checkpoint_dir
@@ -70,6 +75,7 @@ class speech2vivi(object):
         self.real_image = tf.placeholder(tf.float32,
                                          [self.batch_size, self.image_size, self.image_size, self.input_c_dim],
                                          name='mouth_image_real_data')
+
         self.real_voice = tf.placeholder(tf.float32,
                                          [self.batch_size, self.voice_dimen, self.voice_time, 1],
                                          name='mouth_voice_real_data')
@@ -119,33 +125,44 @@ class speech2vivi(object):
     def generator(self, image, voice, y=None):
         with tf.variable_scope("generator") as scope:
             # for audio
-            #            voice = tf.constant(1.0, shape=[1, 13, 35, 1])
+            # voice = tf.constant(1.0, shape=[1, 13, 35, 1])
 
             v_conv1 = conv2d(voice, 64, 3, 3, 1, 1, name="g_v_conv1")
-            v_conv2 = conv2d(v_conv1, 128, 3, 3, 1, 1, name="g_v_conv2")
-            v_max_pool2 = max_pool_3x3_2t(v_conv2)
+            v_e1 = self.g_bn_v_e1(v_conv1)
+            v_conv2 = conv2d(v_e1, 128, 3, 3, 1, 1, name="g_v_conv2")
+            v_e2 = self.g_bn_v_e2(v_conv2)
+            v_max_pool2 = max_pool_3x3_2t(v_e2)
             v_conv3 = conv2d(v_max_pool2, 256, 3, 3, 1, 1, name="g_v_conv3")
-            v_conv4 = conv2d(v_conv3, 256, 3, 3, 1, 1, name="g_v_conv4")
-            v_conv5 = conv2d(v_conv4, 512, 3, 3, 1, 1, name="g_v_conv5")
-            v_max_pool2 = max_pool_3x3_2t(v_conv5)
+            v_e3 = self.g_bn_v_e3(v_conv3)
+            v_conv4 = conv2d(v_e3, 256, 3, 3, 1, 1, name="g_v_conv4")
+            v_e4 = self.g_bn_v_e4(v_conv4)
+            v_conv5 = conv2d(v_e4, 512, 3, 3, 1, 1, name="g_v_conv5")
+            v_e5 = self.g_bn_v_e5(v_conv5)
+            v_max_pool2 = max_pool_3x3_2t(v_e5)
             v_fc6 = linear(tf.reshape(v_max_pool2, [1, -1]), 512, "g_v_fc6")
             v_fc7 = linear(tf.reshape(v_fc6, [1, -1]), 256, "g_v_fc7")
 
             # for video
-            #            image = tf.constant(1.0, shape=[1, 112, 112, 3])
+            # image = tf.constant(1.0, shape=[1, 112, 112, 3])
+
             i_conv1 = conv2d(image, 96, 7, 7, 2, 2, name="g_i_conv1")
-            i_e1 = lrelu(i_conv1, name="g_i_e1")
+            i_e1 = self.g_bn_i_e1(i_conv1)
+            # i_e1 = lrelu(i_conv1, name="g_i_e1")
             i_maxPool1 = max_pool_3x3_2(i_e1)
 
             i_conv2 = conv2d_valid(i_maxPool1, 256, 5, 5, 2, 2, name="g_i_conv2")
-            i_e2 = lrelu(i_conv2)
+            i_e2 = self.g_bn_i_e2(i_conv2)
+            # i_e2 = lrelu(i_conv2)
             i_maxPool2 = max_pool_3x3_2(i_e2)
 
             i_conv3 = conv2d(i_maxPool2, 512, 3, 3, 1, 1, name="g_i_conv3")
-            i_conv4 = conv2d(i_conv3, 512, 3, 3, 1, 1, name="g_i_conv4")
-            i_conv5 = conv2d(i_conv4, 512, 3, 3, 1, 1, name="g_i_conv5")
+            i_e3 = self.g_bn_i_e3(i_conv3)
+            i_conv4 = conv2d(i_e3, 512, 3, 3, 1, 1, name="g_i_conv4")
+            i_e4 = self.g_bn_i_e4(i_conv4)
+            i_conv5 = conv2d(i_e4, 512, 3, 3, 1, 1, name="g_i_conv5")
+            i_e5 = self.g_bn_i_e5(i_conv5)
 
-            i_reshape1 = tf.reshape(i_conv5, [1, -1])
+            i_reshape1 = tf.reshape(i_e5, [1, -1])
             i_fc6 = linear(i_reshape1, 512, "g_i_fc6")
             i_fc7 = linear(i_fc6, 256, "g_i_fc7")
 
@@ -157,15 +174,27 @@ class speech2vivi(object):
             i_v_fc1 = linear(i_v_concat, 128, "g_i_v_fc1")
             i_v_convT2 = deconv2d(tf.reshape(i_v_fc1, [-1, 2, 2, 32]), [1, 4, 4, 512], 6, 6, 2, 2,
                                       name="g_i_v_convT2")
-            i_v_convT3 = deconv2d_valid(i_v_convT2, [1, 12, 12, 256], 5, 5, 2, 2, name="g_i_v_convT3")
-            i_v_concat1 = tf.concat([i_conv2, i_v_convT3], 3, name="g_i_v_concat1")
+            i_v_e2 = self.g_bn_i_v_e2(i_v_convT2, 0.5)
+            # i_v_e2 = tf.nn.dropout(self.g_bn_i_v_e2(i_v_convT2,0.5))
+            i_v_convT3 = deconv2d_valid(i_v_e2, [1, 12, 12, 256], 5, 5, 2, 2, name="g_i_v_convT3")
+            i_v_e3 = self.g_bn_i_v_e3(i_v_convT3, 0.5)
+            # i_v_e3 = tf.nn.dropout(self.g_bn_i_v_e3(i_v_convT3,0.5))
+            i_v_concat1 = tf.concat([i_conv2, i_v_e3], 3, name="g_i_v_concat1")
             i_v_convT4 = deconv2d_valid(i_v_concat1, [1, 28, 28, 96], 5, 5, 2, 2, name="g_i_v_convT4")
-            i_v_concat2 = tf.concat([i_maxPool1, i_v_convT4], 3, name="g_i_v_concat2")
+            i_v_e4 = self.g_bn_i_v_e4(i_v_convT4)
+            # i_v_e4 = tf.nn.dropout(self.g_bn_i_v_e4(i_v_convT4,0.5))
+            i_v_concat2 = tf.concat([i_maxPool1, i_v_e4], 3, name="g_i_v_concat2")
             # for convinient to compare with original size, change to 112*112
             i_v_convT5 = deconv2d(i_v_concat2, [1, 56, 56, 96], 5, 5, 2, 2, name="g_i_v_convT5")
-            i_v_convT6 = deconv2d(i_v_convT5, [1, 112, 112, 64], 5, 5, 2, 2, name="g_i_v_convT6")
-            i_v_convT7 = deconv2d(i_v_convT6, [1, 112, 112, 3], 5, 5, 1, 1, name="g_i_v_convT7")
-            return i_v_convT7
+            i_v_e5 = self.g_bn_i_v_e5(i_v_convT5)
+            # i_v_e5 = tf.nn.dropout(self.g_bn_i_v_e5(i_v_convT5,0.5))
+            i_v_convT6 = deconv2d(i_v_e5, [1, 112, 112, 64], 5, 5, 2, 2, name="g_i_v_convT6")
+            i_v_e6 = self.g_bn_i_v_e6(i_v_convT6)
+            # i_v_e6 = tf.nn.dropout(self.g_bn_i_v_e6(i_v_convT6,0.5))
+            i_v_convT7 = deconv2d(i_v_e6, [1, 112, 112, 3], 5, 5, 1, 1, name="g_i_v_convT7")
+            i_v_e7 = self.g_bn_i_v_e7(i_v_convT7)
+            # i_v_e7 = tf.nn.dropout(self.g_bn_i_v_e7(i_v_convT7,0.5))
+            return i_v_e7
 
 
 
