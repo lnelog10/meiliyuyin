@@ -59,3 +59,4 @@ __pycache__/*
 logs/*
 checkpoint/*
 .idea/*
+sample/*
