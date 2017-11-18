@@ -27,6 +27,12 @@ def imageName2VoiceName(imageName):
     result = "./datasets/first_run/real_voice/"+temp[0]+".txt"
     return result
 
+def getSampleImgName(voicePath,sample_dir, epoch, idx):
+    fileName = voicePath[voicePath.rindex("/")+1:]
+    temp = fileName.split('.')
+    result = './{}/train_{:02d}_{:04d}_txt_{}.png'.format(sample_dir,epoch,idx,temp[0])
+    return result
+
 def load_image(image_path):
     input_img = imread(image_path)
     # print("input_image shape",input_img.shape)
