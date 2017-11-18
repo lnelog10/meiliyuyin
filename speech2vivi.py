@@ -4,6 +4,7 @@ from glob import glob
 from six.moves import xrange
 
 from my_test import imageName2VoiceName
+from my_test import getSampleImgName
 from ops import *
 
 class speech2vivi(object):
@@ -301,8 +302,8 @@ class speech2vivi(object):
                     % (epoch, idx, batch_idxs,
                         time.time() - start_time, errD_fake+errD_real, errG))
 
-                # if np.mod(counter, 100) == 1:
-                #     self.sample_model(args.sample_dir, epoch, idx)
+                if np.mod(counter, 100) == 1:
+                    self.sample_model2(args.sample_dir, epoch, idx)
 
                 if np.mod(counter, 500) == 2:
                     self.save(args.checkpoint_dir, counter)
@@ -317,6 +318,10 @@ class speech2vivi(object):
             sample_images = np.array(sample).astype(np.float32)
         return sample_images
 
+    def load_sample_voices(self):
+        data = glob('./datasets/first_run/sample_voice/*.txt')
+        sample_voices = [load_void_data(sample_file) for sample_file in data]
+        return sample_voices
 
     def sample_model(self, sample_dir, epoch, idx):
         sample_images = self.load_random_samples()
@@ -328,6 +333,23 @@ class speech2vivi(object):
                     './{}/train_{:02d}_{:04d}.png'.format(sample_dir, epoch, idx))
         print("[Sample] d_loss: {:.8f}, g_loss: {:.8f}".format(d_loss, g_loss))
 
+    def sample_model2(self, sample_dir, epoch, idx):
+        #pic
+        specifiedSmapleImage = imread("./datasets/first_run/sample_image/0.jpg")
+        specifiedSmapleImage = specifiedSmapleImage.reshape(1, 112, 112, 3)
+        specifiedSmapleImage = np.array(specifiedSmapleImage).astype(np.float32)
+        #voice
+        # sample_voices = self.load_sample_voices()
+        data = glob('./datasets/first_run/sample_voice/*.txt')
+        for voicepath in data:
+            voiceData = np.loadtxt(voicepath)
+            voiceData = voiceData.reshape(1, 13, 35, 1)
+            voiceData = np.array(voiceData).astype(np.float32)
+            samples = self.sess.run([self.fake_image_sample],feed_dict={self.random_image: specifiedSmapleImage, self.real_voice: voiceData})
+            # print(tf.shape(samples))
+            samples = np.reshape(samples,[112,112,3])
+            so_save_image(samples, getSampleImgName(voicepath,sample_dir, epoch, idx,))
+            # print("[Sample] d_loss: {:.8f}, g_loss: {:.8f}".format(d_loss, g_loss))
 
     def save(self, checkpoint_dir, step):
         model_name = "pix2pix.model"

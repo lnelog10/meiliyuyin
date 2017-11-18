@@ -28,6 +28,14 @@ def load_data(image_path, flip=True, is_test=False):
     # img_AB shape: (fine_size, fine_size, input_c_dim + output_c_dim)
     return img_AB
 
+def load_void_data(image_path):
+    print ("load_void_data(image_path)")
+    print (image_path)
+    voiceData = np.loadtxt(image_path)
+    voiceData = voiceData.reshape(1, 13, 35, 1)
+    voiceData = np.array(voiceData).astype(np.float32)
+    return voiceData
+
 def load_image(image_path):
     input_img = imread(image_path)
     w = int(input_img.shape[1])
@@ -85,6 +93,11 @@ def merge(images, size):
 
 def imsave(images, size, path):
     return scipy.misc.imsave(path, merge(images, size))
+
+#sample out
+def so_save_image(image, image_path):
+    scipy.misc.imsave(image_path, image)
+#sample out
 
 def transform(image, npx=64, is_crop=True, resize_w=64):
     # npx : # of pixels width/height of image

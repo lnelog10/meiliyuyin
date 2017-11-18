@@ -12,5 +12,5 @@ fbank_feat = logfbank(sig,rate)
 print(len(fbank_feat))
 print(len(fbank_feat[0]))
 print(fbank_feat[0][0])
-# print(fbank_feat[:,:])
+# print(fbank_feat[:,:]) test1
 # print(fbank_feat[1:3,:])
