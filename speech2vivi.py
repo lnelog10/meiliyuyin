@@ -307,7 +307,7 @@ class speech2vivi(object):
                 if np.mod(counter, 100) == 1:
                     self.sample_model2(args.sample_dir, epoch, idx)
 
-                if np.mod(counter, 500) == 2:
+                if np.mod(counter, 100) == 2:
                     self.save(args.checkpoint_dir, counter)
 
     def load_random_samples(self):
