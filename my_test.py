@@ -1,12 +1,10 @@
 import os
 from glob import glob
-from six.moves import xrange
-import numpy as np
 import scipy.misc
-import tensorflow as tf
-from ops import *
-
+from pydub import AudioSegment
+from six.moves import xrange
 from model import pix2pix
+from ops import *
 
 
 def load_data(image_path, flip=True, is_test=False):
@@ -27,10 +25,16 @@ def imageName2VoiceName(imageName):
     result = "./datasets/first_run/real_voice/"+temp[0]+".txt"
     return result
 
-def getSampleImgName(voicePath,sample_dir, epoch, idx):
+def getSampleImgNameHis(voicePath,sample_dir, epoch, idx):
     fileName = voicePath[voicePath.rindex("/")+1:]
     temp = fileName.split('.')
-    result = './{}/train_{:02d}_{:04d}_txt_{}.png'.format(sample_dir,epoch,idx,temp[0])
+    result = '{}train_{:02d}_{:04d}_txt_{}.jpg'.format(sample_dir,epoch,idx,temp[0])
+    return result
+
+def getSampleImgName(voicePath,sample_dir):
+    fileName = voicePath[voicePath.rindex("/")+1:]
+    temp = fileName.split('.')
+    result = '{}{}.jpg'.format(sample_dir,temp[0])
     return result
 
 def load_image(image_path):
@@ -229,9 +233,26 @@ def deconv2d_valid(input_, output_shape,
         else:
             return deconv
 
+#每350ms一个片段，对应mfcc特征13*35
+#输出保存在/datasets/first_run/sample_voice/* .txt
+def sample_voice_process(genSampleVoice,SampleVoice):
+    song = AudioSegment.from_mp3(SampleVoice)
+    sum = int(song.__len__()/350)
+    # if (350*sum() < song.__len__()):
+    # sum = sum+1 最后不能整除的丢弃
+    # dirname = "./datasets/first_run/sample_voice/"
+    for i in range(sum):
+        next = (i + 1) * 350
+        first_10_seconds = song[i * 350:next]
+        index = i+1;
+        mp3name = genSampleVoice+'image{:04d}.mp3'.format(index)
+        first_10_seconds.export( mp3name, format="mp3")
+        # y1, sr1 = librosa.load(dirname+str(i)+".mp3", sr=16000)
+        # mfccs = librosa.feature.mfcc(y=y1, sr=sr1, n_mfcc=13, hop_length=164, n_fft=2048)#13*35
+        # np.savetxt(dirname+str(i)+".txt",mfccs)
 
-
-
+def ffmpegGenVideo(imageSlicesDir,mp3SampleFile,outfile):
+    os.system("ffmpeg -threads2 -y -r 4 -i "+imageSlicesDir+"image%04d.jpg -i "+mp3SampleFile+" -absf aac_adtstoasc "+outfile)
 
 if __name__ == '__main__':
     readVoice()
