@@ -5,6 +5,9 @@ from six.moves import xrange
 
 from my_test import imageName2VoiceName
 from my_test import getSampleImgName
+from my_test import sample_voice_process
+from my_test import ffmpegGenVideo
+from my_test import getSampleImgNameHis
 from ops import *
 
 class speech2vivi(object):
@@ -350,13 +353,21 @@ class speech2vivi(object):
         print("[Sample] d_loss: {:.8f}, g_loss: {:.8f}".format(d_loss, g_loss))
 
     def sample_model2(self, sample_dir, epoch, idx):
+
+        specifiedSmapleImagePath = "./datasets/first_run/sample/specified01.jpg"
+        sample_mp3               = "./datasets/first_run/sample/specified01.mp3"
+        out_mp4="./datasets/first_run/sample/specified01.mp4"
+
+        gen_sample_voices = "./datasets/first_run/sample/gen_sample_voices/"#*.txt
+        gen_sample_images = "./datasets/first_run/sample/gen_sample_images/"#*.jpg
+        gen_sample_images_his = "./datasets/first_run/sample/gen_sample_images_his/"  # *.jpg 历史数据
         #pic
-        specifiedSmapleImage = imread("./datasets/first_run/sample_image/0.jpg")
+        specifiedSmapleImage = imread(specifiedSmapleImagePath)
         specifiedSmapleImage = specifiedSmapleImage.reshape(1, 112, 112, 3)
         specifiedSmapleImage = np.array(specifiedSmapleImage).astype(np.float32)
         #voice
-        # sample_voices = self.load_sample_voices()
-        data = glob('./datasets/first_run/sample_voice/*.txt')
+        sample_voice_process(genSampleVoice=gen_sample_voices,SampleVoice=sample_mp3)
+        data = glob(gen_sample_voices+'*.txt')
         for voicepath in data:
             voiceData = np.loadtxt(voicepath)
             voiceData = voiceData.reshape(1, 13, 35, 1)
@@ -364,8 +375,10 @@ class speech2vivi(object):
             samples = self.sess.run([self.fake_image_sample],feed_dict={self.random_image: specifiedSmapleImage, self.real_voice: voiceData})
             # print(tf.shape(samples))
             samples = np.reshape(samples,[112,112,3])
-            so_save_image(samples, getSampleImgName(voicepath,sample_dir, epoch, idx,))
+            so_save_image(samples, getSampleImgName(voicepath,gen_sample_images))
+            so_save_image(samples, getSampleImgNameHis(voicepath, gen_sample_images_his, epoch, idx, ))#历史记录
             # print("[Sample] d_loss: {:.8f}, g_loss: {:.8f}".format(d_loss, g_loss))
+        ffmpegGenVideo(imageSlicesDir=gen_sample_images,mp3SampleFile=sample_mp3,outfile=out_mp4)
 
     def save(self, checkpoint_dir, step):
         model_name = "pix2pix.model"
