@@ -123,9 +123,14 @@ class speech2vivi(object):
                 minval=0.,
                 maxval=1.
             )
+            temp_fake_image = tf.reshape(self.fake_image,[self.batch_size,-1])
+            temp_real_image = tf.reshape(self.real_image,[self.batch_size,-1])
 
-            differences = self.fake_image - self.real_image
-            interpolates = self.real_image + (alpha * differences)
+            differences = temp_fake_image - temp_real_image
+            print("diff shape:",differences.shape)
+            print("alpha shape:",alpha.shape)
+            interpolates = temp_real_image + (alpha * differences)
+            interpolates = tf.reshape(interpolates,[self.batch_size,112,112,3])
             intD, intD_ = self.discriminator(interpolates,reuse=True)
             gradients = tf.gradients(intD, [interpolates])[0]
             print("gradients:",gradients)
@@ -362,34 +367,38 @@ class speech2vivi(object):
         for epoch in xrange(args.epoch):
             # data = glob('./datasets/{}/train/*.jpg'.format(self.dataset_name))
             #np.random.shuffle(data)
-            specifiedImage = imread("./datasets/first_run/random.jpg")
-            specifiedImage = specifiedImage.reshape(1,112,112,3)
+            specifiedImage = [imread("./datasets/first_run/random.jpg") for i in xrange(self.batch_size)]
+            # specifiedImage = imread("./datasets/first_run/random.jpg")
+            # specifiedImage = specifiedImage.reshape(1,112,112,3)
             specifiedImage = np.array(specifiedImage).astype(np.float32)
             # specifiedImage = tf.reshape(specifiedImage,[1,112,112,3])
             print("specifiedImage shape==>",specifiedImage.shape)
             data = glob('./datasets/first_run/real_image/*.jpg')
             batch_idxs = min(len(data), args.train_size) // self.batch_size
+            print("batch_idxs:",batch_idxs)
 
             for idx in xrange(0, batch_idxs):
                 batch_files = data[idx*self.batch_size:(idx+1)*self.batch_size]
                 # batch = [load_data(batch_file) for batch_file in batch_files]
                 # if (self.is_grayscale):
                 #     batch_images = np.array(batch).astype(np.float32)[:, :, :, None]
-                # else:
+                # else:"
                 #     batch_images = np.array(batch).astype(np.float32)
-                for batch_file in batch_files:
-                    batch_images = imread(batch_file)
-                    batch_images = batch_images.reshape(1,112,112,3)
-                    batch_images = np.array(batch_images).astype(np.float32)
+                batch_images = [imread(batch_file) for batch_file in batch_files]
+                voiceData = [np.loadtxt(imageName2VoiceName(batch_file)).reshape(13,35,1) for batch_file in batch_files]
+                # for batch_file in batch_files:
+                #     batch_images = batch_images.reshape(1,112,112,3)
+                #     batch_images = np.array(batch_images).astype(np.float32)
                     # batch_images = tf.reshape(batch_images,[1,112,112,3])
-                    print(batch_images.shape)
-                    print("real_image shape==>",batch_images.shape)
-                    voiceName = imageName2VoiceName(batch_file)
-                    print("voiceName ==>",voiceName)
-                    voiceData = np.loadtxt(voiceName)
-                    voiceData = voiceData.reshape(1,13,35,1)
-                    voiceData = np.array(voiceData).astype(np.float32)
-                    print("voiceData shape==>",voiceData.shape)
+                batch_images = np.array(batch_images).astype(np.float32)
+                print(batch_images.shape)
+                print("real_image shape==>",batch_images.shape)
+                # voiceName = imageName2VoiceName(batch_file)
+                # print("voiceName ==>",voiceName)
+                #     voiceData = np.loadtxt(voiceName)
+                # voiceData = voiceData.reshape(self.batch_size,13,35,1)
+                voiceData = np.array(voiceData).astype(np.float32)
+                print("voiceData shape==>",voiceData.shape)
                     # print(voiceData)
                     # voiceData = tf.reshape(voiceData,[1,13,35])
                 # Update D network
@@ -416,10 +425,11 @@ class speech2vivi(object):
                     % (epoch, idx, batch_idxs,
                         time.time() - start_time, errD_fake+errD_real, errG))
 
-                if np.mod(counter, 50) == 1:
+                if np.mod(counter, 2) == 1:
+                    print("start to sample")
                     self.sample_model2(args.sample_dir, epoch, idx)
 
-                if np.mod(counter, 100) == 2:
+                if np.mod(counter, 10) == 2:
                     self.save(args.checkpoint_dir, counter)
 
     def load_random_samples(self):
@@ -464,7 +474,9 @@ class speech2vivi(object):
         sample_voice_process(genSampleVoice=gen_sample_voices,SampleVoice=sample_mp3)
         data = glob(gen_sample_voices+'*.txt')
         for voicepath in data:
+            print("deal with voice",voicepath)
             voiceData = np.loadtxt(voicepath)
+            print("voice shape",voiceData.shape)
             voiceData = voiceData.reshape(1, 13, 35, 1)
             voiceData = np.array(voiceData).astype(np.float32)
             samples = self.sess.run([self.fake_image_sample],feed_dict={self.random_image: specifiedSmapleImage, self.real_voice: voiceData})

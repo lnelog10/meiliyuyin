@@ -1,4 +1,5 @@
 import os
+import librosa
 from glob import glob
 import scipy.misc
 from pydub import AudioSegment
@@ -240,22 +241,28 @@ def sample_voice_process(genSampleVoice,SampleVoice):
     sum = int(song.__len__()/350)
     # if (350*sum() < song.__len__()):
     # sum = sum+1 最后不能整除的丢弃
-    # dirname = "./datasets/first_run/sample_voice/"
     for i in range(sum):
         next = (i + 1) * 350
         first_10_seconds = song[i * 350:next]
-        index = i+1;
+        index =(i + 1);
         mp3name = genSampleVoice+'image{:04d}.mp3'.format(index)
         first_10_seconds.export( mp3name, format="mp3")
-        # y1, sr1 = librosa.load(dirname+str(i)+".mp3", sr=16000)
-        # mfccs = librosa.feature.mfcc(y=y1, sr=sr1, n_mfcc=13, hop_length=164, n_fft=2048)#13*35
-        # np.savetxt(dirname+str(i)+".txt",mfccs)
+        y1, sr1 = librosa.load(mp3name, sr=16000)
+        mfccs = librosa.feature.mfcc(y=y1, sr=sr1, n_mfcc=13, hop_length=164, n_fft=2048)#13*35
+        print("==>",len(mfccs).__str__() + "*" + len(mfccs[0]).__str__())
+        np.savetxt(genSampleVoice+'image{:04d}.txt'.format(index),mfccs)
 
 def ffmpegGenVideo(imageSlicesDir,mp3SampleFile,outfile):
     os.system("ffmpeg -threads2 -y -r 4 -i "+imageSlicesDir+"image%04d.jpg -i "+mp3SampleFile+" -absf aac_adtstoasc "+outfile)
 
+def test_voice():
+    sample_mp3 = "./datasets/first_run/sample/specified01.mp3"
+    gen_sample_voices = "./datasets/first_run/sample/gen_sample_voices/"
+    sample_voice_process(gen_sample_voices,sample_mp3)
+
 if __name__ == '__main__':
-    readVoice()
+    test_voice()
+
 
 
 
