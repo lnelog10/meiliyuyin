@@ -266,15 +266,15 @@ def sample_voice_process(genSampleVoice,SampleVoice):
         index =(i + 1);
         mp3name = genSampleVoice+'image{:04d}.mp3'.format(index)
         first_10_seconds.export( mp3name, format="mp3")
-        print(first_10_seconds.__len__())
-        y1, sr1 = librosa.load(mp3name, sr=16000)#16000 采样率，
-        print("y1 length:"+str(len(y1)))
-        mfccs = librosa.feature.mfcc(y=y1, sr=sr1, n_mfcc=13, hop_length=183, n_fft=2048)#13*35
-        print("==>",len(mfccs).__str__() + "*" + len(mfccs[0]).__str__())
+        y1, sr1 = librosa.load(mp3name, sr=16000)
+        mfccs = librosa.feature.mfcc(y=y1, sr=sr1, n_mfcc=13, hop_length=192, n_fft=2048)#13*35
+        print("==>"+str(i)+"<==",len(mfccs).__str__() + "*" + len(mfccs[0]).__str__())
         np.savetxt(genSampleVoice+'image{:04d}.txt'.format(index),mfccs)
 
 def ffmpegGenVideo(imageSlicesDir,mp3SampleFile,outfile):
-    os.system("ffmpeg -threads2 -y -r 4 -i "+imageSlicesDir+"image%04d.jpg -i "+mp3SampleFile+" -absf aac_adtstoasc "+outfile)
+    # os.system("ffmpeg -threads2 -y -r 4 -i "+imageSlicesDir+"image%04d.jpg -i "+mp3SampleFile+" -absf aac_adtstoasc "+outfile)
+    # -r 是frame rate
+    os.system("ffmpeg -y -r 3 -i "+imageSlicesDir+"image%04d.jpg -i "+mp3SampleFile+" -absf aac_adtstoasc -strict -2 "+outfile)
 
 def test_voice():
     sample_mp3 = "./datasets/first_run/sample/specified01.mp3"

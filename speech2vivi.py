@@ -95,6 +95,14 @@ class speech2vivi(object):
                                          [self.batch_size, self.image_size, self.image_size, self.input_c_dim],
                                          name='random_image_real_data')
 
+        self.sample_random_image = tf.placeholder(tf.float32,
+                                           [1, self.image_size, self.image_size, self.input_c_dim],
+                                           name='random_image_real_data')
+
+        self.sample_real_voice = tf.placeholder(tf.float32,
+                                         [1, self.voice_dimen, self.voice_time, 1],
+                                         name='mouth_voice_real_data')
+
         print("random shape",self.random_image.shape)
 
         self.fake_image = self.generator(self.random_image, self.real_voice)
@@ -102,7 +110,7 @@ class speech2vivi(object):
         self.D, self.D_logits = self.discriminator(self.real_image, reuse=False)
         self.D_, self.D_logits_ = self.discriminator(self.fake_image, reuse=True)
 
-        self.fake_image_sample = self.sampler(self.random_image, self.real_voice)
+        self.fake_image_sample = self.sampler(self.sample_random_image, self.sample_real_voice)
 
         self.d_sum = tf.summary.histogram("d", self.D)
         self.d__sum = tf.summary.histogram("d_", self.D_)
@@ -296,25 +304,25 @@ class speech2vivi(object):
                 assert tf.get_variable_scope().reuse == False
 
             if self.mode == "wgan-pn":
-                # h0 = lrelu(conv2d(image, self.df_dim, name='d_h0_conv'))
+                h0 = lrelu(conv2d(image, self.df_dim, name='d_h0_conv'))
                 # h0 is (128 x 128 x self.df_dim)
-                # h1 = lrelu(conv2d(h0, self.df_dim*2, name='d_h1_conv'))
+                h1 = lrelu(conv2d(h0, self.df_dim*2, name='d_h1_conv'))
                 # h1 is (64 x 64 x self.df_dim*2)
-                # h2 = lrelu(conv2d(h1, self.df_dim*4, name='d_h2_conv'))
+                h2 = lrelu(conv2d(h1, self.df_dim*4, name='d_h2_conv'))
                 # h2 is (32x 32 x self.df_dim*4)
-                # h3 = lrelu(conv2d(h2, self.df_dim*8, d_h=1, d_w=1, name='d_h3_conv'))
-                # h3 is (16 x 16 x self.df_dim*8)
-                # h4 = linear(tf.reshape(h3, [self.batch_size, -1]), 1, 'd_h3_lin')
-
-                h0 = conv2d(image, self.df_dim, name='d_h0_conv')
-                # h0 is (128 x 128 x self.df_dim)
-                h1 = conv2d(h0, self.df_dim * 2, name='d_h1_conv')
-                # h1 is (64 x 64 x self.df_dim*2)
-                h2 = conv2d(h1, self.df_dim * 4, name='d_h2_conv')
-                # h2 is (32x 32 x self.df_dim*4)
-                h3 = conv2d(h2, self.df_dim * 8, d_h=1, d_w=1, name='d_h3_conv')
+                h3 = lrelu(conv2d(h2, self.df_dim*8, d_h=1, d_w=1, name='d_h3_conv'))
                 # h3 is (16 x 16 x self.df_dim*8)
                 h4 = linear(tf.reshape(h3, [self.batch_size, -1]), 1, 'd_h3_lin')
+
+                # h0 = conv2d(image, self.df_dim, name='d_h0_conv')
+                # h0 is (128 x 128 x self.df_dim)
+                # h1 = conv2d(h0, self.df_dim * 2, name='d_h1_conv')
+                # h1 is (64 x 64 x self.df_dim*2)
+                # h2 = conv2d(h1, self.df_dim * 4, name='d_h2_conv')
+                # h2 is (32x 32 x self.df_dim*4)
+                # h3 = conv2d(h2, self.df_dim * 8, d_h=1, d_w=1, name='d_h3_conv')
+                # h3 is (16 x 16 x self.df_dim*8)
+                # h4 = linear(tf.reshape(h3, [self.batch_size, -1]), 1, 'd_h3_lin')
 
             else:
                 # h0 = lrelu(conv2d(image, self.df_dim, name='d_h0_conv'))
@@ -344,10 +352,16 @@ class speech2vivi(object):
 
     def train(self, args):
         """Train pix2pix"""
-        d_optim = tf.train.AdamOptimizer(args.lr, beta1=args.beta1) \
-                          .minimize(self.d_loss, var_list=self.d_vars)
-        g_optim = tf.train.AdamOptimizer(args.lr, beta1=args.beta1) \
-                          .minimize(self.g_loss, var_list=self.g_vars)
+        if self.mode == "wgan-pn":
+            d_optim = tf.train.AdamOptimizer(args.lr, beta1=0.5, beta2=0.9) \
+                              .minimize(self.d_loss, var_list=self.d_vars)
+            g_optim = tf.train.AdamOptimizer(args.lr, beta1=0.5, beta2=0.9) \
+                .minimize(self.g_loss, var_list=self.g_vars)
+        else:
+            d_optim = tf.train.AdamOptimizer(args.lr, beta1=args.beta1) \
+                              .minimize(self.d_loss, var_list=self.d_vars)
+            g_optim = tf.train.AdamOptimizer(args.lr, beta1=args.beta1) \
+                              .minimize(self.g_loss, var_list=self.g_vars)
 
         init_op = tf.global_variables_initializer()
         self.sess.run(init_op)
@@ -427,7 +441,7 @@ class speech2vivi(object):
                     % (epoch, idx, batch_idxs,
                         time.time() - start_time, errD_fake+errD_real, errG))
 
-                if np.mod(counter, 2) == 1:
+                if np.mod(counter, 20) == 1:
                     print("start to sample")
                     self.sample_model2(args.sample_dir, epoch, idx)
 
@@ -481,7 +495,7 @@ class speech2vivi(object):
             print("voice shape",voiceData.shape)
             voiceData = voiceData.reshape(1, 13, 35, 1)
             voiceData = np.array(voiceData).astype(np.float32)
-            samples = self.sess.run([self.fake_image_sample],feed_dict={self.random_image: specifiedSmapleImage, self.real_voice: voiceData})
+            samples = self.sess.run([self.fake_image_sample],feed_dict={self.sample_random_image: specifiedSmapleImage, self.sample_real_voice: voiceData})
             # print(tf.shape(samples))
             samples = np.reshape(samples,[112,112,3])
             so_save_image(samples, getSampleImgName(voicepath,gen_sample_images))
@@ -503,7 +517,7 @@ class speech2vivi(object):
 
 
 
-    def sampler(self, image, voice):
+    def sampler(self, image, voice, batch_size = 1):
         with tf.variable_scope("generator") as scope:
             scope.reuse_variables()
             # for audio
@@ -526,8 +540,8 @@ class speech2vivi(object):
             # v_e5 = self.g_bn_v_e5(v_conv5)
             # v_max_pool2 = max_pool_3x3_2t(v_e5)
             v_max_pool2 = max_pool_3x3_2t(v_conv5)
-            v_fc6 = linear(tf.reshape(v_max_pool2, [self.batch_size, -1]), 512, "g_v_fc6")
-            v_fc7 = linear(tf.reshape(v_fc6, [self.batch_size, -1]), 256, "g_v_fc7")
+            v_fc6 = linear(tf.reshape(v_max_pool2, [batch_size, -1]), 512, "g_v_fc6")
+            v_fc7 = linear(tf.reshape(v_fc6, [batch_size, -1]), 256, "g_v_fc7")
 
             # for video
             # image = tf.constant(1.0, shape=[self.batch_size, 112, 112, 3])
@@ -550,7 +564,7 @@ class speech2vivi(object):
             # i_e5 = self.g_bn_i_e5(i_conv5)
 
             # i_reshape1 = tf.reshape(i_e5, [self.batch_size, -1])
-            i_reshape1 = tf.reshape(i_conv5, [self.batch_size, -1])
+            i_reshape1 = tf.reshape(i_conv5, [batch_size, -1])
             i_fc6 = linear(i_reshape1, 512, "g_i_fc6")
             i_fc7 = linear(i_fc6, 256, "g_i_fc7")
 
@@ -560,31 +574,31 @@ class speech2vivi(object):
 
             # generate new picture
             i_v_fc1 = linear(i_v_concat, 128, "g_i_v_fc1")
-            i_v_convT2 = deconv2d(tf.reshape(i_v_fc1, [-1, 2, 2, 32]), [self.batch_size, 4, 4, 512], 6, 6, 2, 2,
+            i_v_convT2 = deconv2d(tf.reshape(i_v_fc1, [-1, 2, 2, 32]), [batch_size, 4, 4, 512], 6, 6, 2, 2,
                                   name="g_i_v_convT2")
             # i_v_e2 = self.g_bn_i_v_e2(i_v_convT2, 0.5)
             # i_v_e2 = tf.nn.dropout(self.g_bn_i_v_e2(i_v_convT2,0.5))
             # i_v_convT3 = deconv2d_valid(i_v_e2, [self.batch_size, 12, 12, 256], 5, 5, 2, 2, name="g_i_v_convT3")
-            i_v_convT3 = deconv2d_valid(i_v_convT2, [self.batch_size, 12, 12, 256], 5, 5, 2, 2, name="g_i_v_convT3")
+            i_v_convT3 = deconv2d_valid(i_v_convT2, [batch_size, 12, 12, 256], 5, 5, 2, 2, name="g_i_v_convT3")
             # i_v_e3 = self.g_bn_i_v_e3(i_v_convT3, 0.5)
             # i_v_e3 = tf.nn.dropout(self.g_bn_i_v_e3(i_v_convT3,0.5))
             # i_v_concat1 = tf.concat([i_conv2, i_v_e3], 3, name="g_i_v_concat1")
             i_v_concat1 = tf.concat([i_conv2, i_v_convT3], 3, name="g_i_v_concat1")
-            i_v_convT4 = deconv2d_valid(i_v_concat1, [self.batch_size, 28, 28, 96], 5, 5, 2, 2, name="g_i_v_convT4")
+            i_v_convT4 = deconv2d_valid(i_v_concat1, [batch_size, 28, 28, 96], 5, 5, 2, 2, name="g_i_v_convT4")
             # i_v_e4 = self.g_bn_i_v_e4(i_v_convT4)
             # i_v_e4 = tf.nn.dropout(self.g_bn_i_v_e4(i_v_convT4,0.5))
             # i_v_concat2 = tf.concat([i_maxPool1, i_v_e4], 3, name="g_i_v_concat2")
             i_v_concat2 = tf.concat([i_maxPool1, i_v_convT4], 3, name="g_i_v_concat2")
             # for convinient to compare with original size, change to 112*112
-            i_v_convT5 = deconv2d(i_v_concat2, [self.batch_size, 56, 56, 96], 5, 5, 2, 2, name="g_i_v_convT5")
+            i_v_convT5 = deconv2d(i_v_concat2, [batch_size, 56, 56, 96], 5, 5, 2, 2, name="g_i_v_convT5")
             # i_v_e5 = self.g_bn_i_v_e5(i_v_convT5)
             # i_v_e5 = tf.nn.dropout(self.g_bn_i_v_e5(i_v_convT5,0.5))
             # i_v_convT6 = deconv2d(i_v_e5, [self.batch_size, 112, 112, 64], 5, 5, 2, 2, name="g_i_v_convT6")
-            i_v_convT6 = deconv2d(i_v_convT5, [self.batch_size, 112, 112, 64], 5, 5, 2, 2, name="g_i_v_convT6")
+            i_v_convT6 = deconv2d(i_v_convT5, [batch_size, 112, 112, 64], 5, 5, 2, 2, name="g_i_v_convT6")
             # i_v_e6 = self.g_bn_i_v_e6(i_v_convT6
             # i_v_e6 = tf.nn.dropout(self.g_bn_i_v_e6(i_v_convT6,0.5))
             # i_v_convT7 = deconv2d(i_v_e6, [self.batch_size, 112, 112, 3], 5, 5, 1, 1, name="g_i_v_convT7")
-            i_v_convT7 = deconv2d(i_v_convT6, [self.batch_size, 112, 112, 3], 5, 5, 1, 1, name="g_i_v_convT7")
+            i_v_convT7 = deconv2d(i_v_convT6, [batch_size, 112, 112, 3], 5, 5, 1, 1, name="g_i_v_convT7")
             # i_v_e7 = self.g_bn_i_v_e7(i_v_convT7)
             # i_v_e7 = tf.nn.dropout(self.g_bn_i_v_e7(i_v_convT7,0.5))
 

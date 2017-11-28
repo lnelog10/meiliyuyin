@@ -52,8 +52,9 @@ def conv2d(input_, output_dim,
         biases = tf.get_variable('biases', [output_dim], initializer=tf.constant_initializer(0.0))
         conv = tf.reshape(tf.nn.bias_add(conv, biases), conv.get_shape())
 
-        res = tf.nn.relu(conv)
+        # res = tf.nn.relu(conv)
 
+        res = conv
         return res
 
 def deconv2d(input_, output_shape,
@@ -76,7 +77,8 @@ def deconv2d(input_, output_shape,
         biases = tf.get_variable('biases', [output_shape[-1]], initializer=tf.constant_initializer(0.0))
         deconv = tf.reshape(tf.nn.bias_add(deconv, biases), deconv.get_shape())
 
-        res = tf.nn.relu(deconv)
+        # res = tf.nn.relu(deconv)
+        res = deconv
         if with_w:
             return res, w, biases
         else:
@@ -84,7 +86,6 @@ def deconv2d(input_, output_shape,
        
 
 def lrelu(x, leak=0.2, name="lrelu"):
-    # return tf.nn.relu(x)
   return tf.maximum(x, leak*x)
 
 def linear(input_, output_size, scope=None, stddev=0.02, bias_start=0.0, with_w=False):
@@ -95,7 +96,8 @@ def linear(input_, output_size, scope=None, stddev=0.02, bias_start=0.0, with_w=
                                  tf.random_normal_initializer(stddev=stddev))
         bias = tf.get_variable("bias", [output_size],
             initializer=tf.constant_initializer(bias_start))
-        res = tf.nn.relu(tf.matmul(input_, matrix) + bias)
+        # res = lrelu(tf.matmul(input_, matrix) + bias)
+        res = tf.matmul(input_,matrix) + bias
         if with_w:
             return res, matrix, bias
         else:
@@ -125,7 +127,8 @@ def conv2d_valid(input_, output_dim,
         biases = tf.get_variable('biases', [output_dim], initializer=tf.constant_initializer(0.0))
         conv = tf.reshape(tf.nn.bias_add(conv, biases), conv.get_shape())
 
-        res = tf.nn.relu(conv)
+        # res = tf.nn.relu(conv)
+        res = conv
 
         return res
 
@@ -149,8 +152,9 @@ def deconv2d_valid(input_, output_shape,
         biases = tf.get_variable('biases', [output_shape[-1]], initializer=tf.constant_initializer(0.0))
         deconv = tf.reshape(tf.nn.bias_add(deconv, biases), deconv.get_shape())
 
-        res = tf.nn.relu(deconv)
+        # res = tf.nn.relu(deconv)
 
+        res = deconv
         if with_w:
             return res, w, biases
         else:
