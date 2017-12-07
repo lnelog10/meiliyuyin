@@ -6,9 +6,8 @@ do
 	then 
 		if [[ $file =~ \.mp4$ ]] 
 		then 
-			echo "deal $file"
 			basename=${file%.*}
-			echo "basename $basename"
+			echo "deal with $basename.mp4"
 			source dealWithOneMp4.sh $basename
 		fi
 	fi
