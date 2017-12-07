@@ -7,13 +7,13 @@ import cv2
 import math
 
 ap = argparse.ArgumentParser()
-#ap.add_argument("-i","--input", required=True, help="path to input video")
-#ap.add_argument("-o","--output", required=True, help="path to output video")
+ap.add_argument("-i","--input", required=True, help="path to input video")
+# ap.add_argument("-o","--output", required=True, help="path to output video")
 ap.add_argument("-p", "--shape-predictor", required=True, help="path to facial landmark predictor")
 args = vars(ap.parse_args())
 
-cap = cv2.VideoCapture("../youtube_video/K.mp4")
-#cap = cv2.VideoCapture(args["input"])
+# cap = cv2.VideoCapture("../youtube_video/K.mp4")
+cap = cv2.VideoCapture(args["input"]+".mp4")
 #cap = cv2.VideoCapture(0)
 
 print("frame count:",cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -34,8 +34,8 @@ time_count = -1
 SLOT_TIME = 350
 
 while(cap.isOpened()):
-	cap.set(cv2.CAP_PROP_POS_MSEC,time_count * SLOT_TIME)
 	time_count = time_count + 1
+	cap.set(cv2.CAP_PROP_POS_MSEC,time_count * SLOT_TIME)
 	ret, image = cap.read()
 	if ret == True:
 #		image = imutils.resize(image, width=500)
@@ -151,7 +151,8 @@ while(cap.isOpened()):
 #			cv2.imshow("frame",image)
 			#0~100
 #			cv2.imwrite("test"+str(time_count)+".jpg",[int(cv2.IMWRITE_JPEG_QUALITY),95],image)
-			cv2.imwrite(str(time_count)+".jpg",image)
+			outputFileName = args["input"]+"{:04d}.jpg".format(time_count+1)
+			cv2.imwrite(outputFileName,image)
 			if time_count == 982:
 				break
 			#0~9
