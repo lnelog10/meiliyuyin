@@ -234,13 +234,32 @@ def deconv2d_valid(input_, output_shape,
         else:
             return deconv
 
-#每350ms一个片段，对应mfcc特征13*35
-#输出保存在/datasets/first_run/sample_voice/* .txt
+
+def train_voice_process(genSampleVoice,SampleVoice):
+    song = AudioSegment.from_mp3(SampleVoice)
+    print("sample_voice_process")
+    print(song.__len__())
+    sum = int(song.__len__()/350)
+
+    for i in range(sum):
+        next = (i + 1) * 350
+        first_10_seconds = song[i * 350:next]
+        index =(i + 1);
+        mp3name = genSampleVoice+'image{:04d}.mp3'.format(index)
+        first_10_seconds.export( mp3name, format="mp3")
+        print(first_10_seconds.__len__())
+        y1, sr1 = librosa.load(mp3name, sr=16000)#16000 采样率，
+        print("y1 length:"+str(len(y1)))
+        mfccs = librosa.feature.mfcc(y=y1, sr=sr1, n_mfcc=13, hop_length=183, n_fft=2048)#13*35
+        print("==>",len(mfccs).__str__() + "*" + len(mfccs[0]).__str__())
+        np.savetxt(genSampleVoice+str(i)+'.txt',mfccs)
+
 def sample_voice_process(genSampleVoice,SampleVoice):
     song = AudioSegment.from_mp3(SampleVoice)
+    print("sample_voice_process")
+    print(song.__len__())
     sum = int(song.__len__()/350)
-    # if (350*sum() < song.__len__()):
-    # sum = sum+1 最后不能整除的丢弃
+
     for i in range(sum):
         next = (i + 1) * 350
         first_10_seconds = song[i * 350:next]

@@ -8,6 +8,7 @@ from my_test import getSampleImgName
 from my_test import sample_voice_process
 from my_test import ffmpegGenVideo
 from my_test import getSampleImgNameHis
+from my_test import train_voice_process
 from ops import *
 
 class speech2vivi(object):
@@ -384,6 +385,7 @@ class speech2vivi(object):
         else:
             print(" [!] Load failed...")
 
+        train_voice_process("./datasets/first_run/real_voice/","./datasets/first_run/sample/specified01.mp3");
         for epoch in xrange(args.epoch):
             # data = glob('./datasets/{}/train/*.jpg'.format(self.dataset_name))
             #np.random.shuffle(data)
