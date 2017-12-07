@@ -1,7 +1,8 @@
 #!/bin/sh
 
 #input filename
-VIDEO_NAME="0001"
+
+VIDEO_NAME=$1
 VIDEO_TRANS_IMAGE_PY="video_facial_landmarks_align_and_crop.py"
 PREDICTOR_DAT="shape_predictor_68_face_landmarks.dat"
 
@@ -9,6 +10,9 @@ AUDIO_TRANS_PY="dealWidthAudio.py"
 
 #mkdir 
 workon cv
+
+echo "now deal with $VIDEO_NAME"
+
 mkdir $VIDEO_NAME
 ffmpeg -i "$VIDEO_NAME.mp4" -f mp3 -vn "$VIDEO_NAME/$VIDEO_NAME.mp3"
 cp $VIDEO_NAME.mp4 $VIDEO_NAME
