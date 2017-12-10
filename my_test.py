@@ -38,6 +38,11 @@ def getSampleImgName(voicePath,sample_dir):
     result = '{}{}.jpg'.format(sample_dir,temp[0])
     return result
 
+def getTrainImgFakeName(train_dir, index):
+    if not os.path.exists(train_dir):
+        os.makedirs(train_dir)
+    result = '{}/{}_fake.jpg'.format(train_dir,index)
+
 def load_image(image_path):
     input_img = imread(image_path)
     # print("input_image shape",input_img.shape)

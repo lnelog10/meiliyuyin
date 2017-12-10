@@ -3,7 +3,7 @@ import time
 from glob import glob
 from six.moves import xrange
 
-from my_test import imageName2VoiceName
+from my_test import imageName2VoiceName, getTrainImgFakeName
 from my_test import getSampleImgName
 from my_test import sample_voice_process
 from my_test import ffmpegGenVideo
@@ -14,7 +14,7 @@ from ops import *
 class speech2vivi(object):
     def __init__(self, sess, image_size=112,voice_dimen=13,voice_time=35,
                  batch_size=1, sample_size=1, output_size=112,
-                 gf_dim=64, df_dim=64, L1_lambda=100,
+                 gf_dim=64, df_dim=64, L1_lambda=10,
                  input_c_dim=3, output_c_dim=3, dataset_name='facades',
                  checkpoint_dir=None, sample_dir=None, mode = "wgan-pn"):
         """
@@ -153,18 +153,23 @@ class speech2vivi(object):
             print("enter original mode")
             self.d_loss_real = tf.reduce_mean(
                 tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits, labels=tf.ones_like(self.D)))
+                # self.D_logits - tf.ones_like(self.D))
 
             self.d_loss_fake = tf.reduce_mean(
                 tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_, labels=tf.zeros_like(self.D_)))
+                # self.D_logits_ - tf.zeros(self.D_))
 
-            self.g_loss = tf.reduce_mean(
-                tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_, labels=tf.ones_like(self.D_))) \
-                          + self.L1_lambda * tf.reduce_mean(tf.abs(self.real_image - self.fake_image))
+            self.g_loss_one = tf.reduce_mean(
+                tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_, labels=tf.ones_like(self.D_)))
+                # self.D_logits_ - tf.ones_like(self.D_))
+            self.g_loss_two =  self.L1_lambda * tf.reduce_mean(tf.abs(self.real_image - self.fake_image))
 
             self.d_loss_real_sum = tf.summary.scalar("d_loss_real", self.d_loss_real)
             self.d_loss_fake_sum = tf.summary.scalar("d_loss_fake", self.d_loss_fake)
 
             self.d_loss = self.d_loss_real + self.d_loss_fake
+            self.g_loss = self.g_loss_one + self.g_loss_two
+            # self.g_loss = self.g_loss_one
 
 
         self.g_loss_sum = tf.summary.scalar("g_loss", self.g_loss)
@@ -351,20 +356,21 @@ class speech2vivi(object):
             if self.mode == "wgan-pn":
                 return h4,h4
             else:
-                return tf.nn.sigmoid(h4), h4
+                return h4,h4
+                # return tf.nn.sigmoid(h4), h4
 
 
     def train(self, args):
         """Train pix2pix"""
         if self.mode == "wgan-pn":
-            d_optim = tf.train.AdamOptimizer(args.lr, beta1=0.5, beta2=0.9) \
+            d_optim = tf.train.AdamOptimizer(args.lr_d, beta1=0.5, beta2=0.9) \
                               .minimize(self.d_loss, var_list=self.d_vars)
-            g_optim = tf.train.AdamOptimizer(args.lr, beta1=0.5, beta2=0.9) \
+            g_optim = tf.train.AdamOptimizer(args.lr_g, beta1=0.5, beta2=0.9) \
                 .minimize(self.g_loss, var_list=self.g_vars)
         else:
-            d_optim = tf.train.AdamOptimizer(args.lr, beta1=args.beta1) \
+            d_optim = tf.train.AdamOptimizer(args.lr_d, beta1=args.beta1) \
                               .minimize(self.d_loss, var_list=self.d_vars)
-            g_optim = tf.train.AdamOptimizer(args.lr, beta1=args.beta1) \
+            g_optim = tf.train.AdamOptimizer(args.lr_g, beta1=args.beta1) \
                               .minimize(self.g_loss, var_list=self.g_vars)
 
         init_op = tf.global_variables_initializer()
@@ -385,7 +391,7 @@ class speech2vivi(object):
         else:
             print(" [!] Load failed...")
 
-        train_voice_process("./datasets/first_run/real_voice/","./datasets/first_run/sample/specified01.mp3");
+        # train_voice_process("./datasets/first_run/real_voice/","./datasets/first_run/sample/specified01.mp3");
         for epoch in xrange(args.epoch):
             # data = glob('./datasets/{}/train/*.jpg'.format(self.dataset_name))
             #np.random.shuffle(data)
@@ -440,18 +446,28 @@ class speech2vivi(object):
 
                 errD_fake = self.d_loss_fake.eval({self.real_image: batch_images, self.real_voice:voiceData, self.random_image: specifiedImage})
                 errD_real = self.d_loss_real.eval({self.real_image: batch_images, self.real_voice:voiceData, self.random_image: specifiedImage})
-                errG = self.g_loss.eval({self.real_image: batch_images, self.real_voice:voiceData, self.random_image: specifiedImage})
+                errG_1 = self.g_loss_one.eval({self.real_image: batch_images, self.real_voice:voiceData, self.random_image: specifiedImage})
+                errG_2 = self.g_loss_two.eval({self.real_image: batch_images, self.real_voice:voiceData, self.random_image: specifiedImage})
 
                 counter += 1
-                print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f" \
+                print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f g_loss: %.8f" \
                     % (epoch, idx, batch_idxs,
-                        time.time() - start_time, errD_fake+errD_real, errG))
+                        time.time() - start_time, errD_fake+errD_real, errG_1, errG_2))
+                train_fake_dir = "/home/train_fake/";
+                # so_save_image(self.fake_image, getTrainImgFakeName(train_fake_dir, counter))
+                temp_fake_image = self.sess.run([self.fake_image],feed_dict={self.real_image: batch_images, self.real_voice:voiceData, self.random_image: specifiedImage})
+                # {self.sample_random_image: specifiedSmapleImage, self.sample_real_voice: voiceData})
+                # temp_fake_image = np.reshape(temp_fake_image,[112,112,3])
+                # so_save_image(temp_fake_image,"/home/jackform/workspace/meiliyuyin/fake.jpg")
+                # temp_real_image = np.reshape(batch_images,[112,112,3])
+                # so_save_image(temp_real_image,"/home/jackform/workspace/meiliyuyin/real.jpg")
 
-                if np.mod(counter, 8) == 1:
+
+                if np.mod(counter, 100) == 1:
                     print("start to sample")
                     self.sample_model2(args.sample_dir, epoch, idx)
 
-                if np.mod(counter, 4) == 2:
+                if np.mod(counter, 5) == 2:
                     self.save(args.checkpoint_dir, counter)
 
     def load_random_samples(self):
@@ -493,7 +509,7 @@ class speech2vivi(object):
         specifiedSmapleImage = specifiedSmapleImage.reshape(1, 112, 112, 3)
         specifiedSmapleImage = np.array(specifiedSmapleImage).astype(np.float32)
         #voice
-        sample_voice_process(genSampleVoice=gen_sample_voices,SampleVoice=sample_mp3)
+        # sample_voice_process(genSampleVoice=gen_sample_voices,SampleVoice=sample_mp3)
         data = glob(gen_sample_voices+'*.txt')
         for voicepath in data:
             print("deal with voice",voicepath)
