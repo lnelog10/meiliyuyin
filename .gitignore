@@ -60,3 +60,4 @@ logs/*
 checkpoint/*
 .idea/*
 sample/*
+data_process/*
