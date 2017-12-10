@@ -234,7 +234,7 @@ def deconv2d_valid(input_, output_shape,
         else:
             return deconv
 
-
+#13*35[hop_length ubuntu机器192，widonws:164,mac:183]sr必须为标准值44.1k
 def train_voice_process(genSampleVoice,SampleVoice):
     song = AudioSegment.from_mp3(SampleVoice)
     print("sample_voice_process")
@@ -254,6 +254,7 @@ def train_voice_process(genSampleVoice,SampleVoice):
         print("==>",len(mfccs).__str__() + "*" + len(mfccs[0]).__str__())
         np.savetxt(genSampleVoice+str(i)+'.txt',mfccs)
 
+#13*35[hop_length ubuntu机器192，widonws:164,mac:183] sr必须为标准值44.1k
 def sample_voice_process(genSampleVoice,SampleVoice):
     song = AudioSegment.from_mp3(SampleVoice)
     print("sample_voice_process")
@@ -267,7 +268,7 @@ def sample_voice_process(genSampleVoice,SampleVoice):
         mp3name = genSampleVoice+'image{:04d}.mp3'.format(index)
         first_10_seconds.export( mp3name, format="mp3")
         y1, sr1 = librosa.load(mp3name, sr=16000)
-        mfccs = librosa.feature.mfcc(y=y1, sr=sr1, n_mfcc=13, hop_length=192, n_fft=2048)#13*35
+        mfccs = librosa.feature.mfcc(y=y1, sr=sr1, n_mfcc=13, hop_length=183, n_fft=2048)
         print("==>"+str(i)+"<==",len(mfccs).__str__() + "*" + len(mfccs[0]).__str__())
         np.savetxt(genSampleVoice+'image{:04d}.txt'.format(index),mfccs)
 
@@ -283,10 +284,3 @@ def test_voice():
 
 if __name__ == '__main__':
     test_voice()
-
-
-
-
-
-
-	
