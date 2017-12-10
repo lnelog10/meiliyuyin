@@ -61,3 +61,4 @@ checkpoint/*
 .idea/*
 sample/*
 data_process/*
+.DS_Store
