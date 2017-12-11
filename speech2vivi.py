@@ -383,7 +383,7 @@ class speech2vivi(object):
         self.writer = tf.summary.FileWriter("./logs", self.sess.graph)
 
 
-        counter = 1
+        counter = 0
         start_time = time.time()
 
         if self.load(self.checkpoint_dir):
@@ -395,12 +395,12 @@ class speech2vivi(object):
         for epoch in xrange(args.epoch):
             # data = glob('./datasets/{}/train/*.jpg'.format(self.dataset_name))
             #np.random.shuffle(data)
-            specifiedImage = [imread("./datasets/first_run/random.jpg") for i in xrange(self.batch_size)]
+            # specifiedImage = [imread("./datasets/first_run/random.jpg") for i in xrange(self.batch_size)]
             # specifiedImage = imread("./datasets/first_run/random.jpg")
             # specifiedImage = specifiedImage.reshape(1,112,112,3)
-            specifiedImage = np.array(specifiedImage).astype(np.float32)
+            # specifiedImage = np.array(specifiedImage).astype(np.float32)
             # specifiedImage = tf.reshape(specifiedImage,[1,112,112,3])
-            print("specifiedImage shape==>",specifiedImage.shape)
+            # print("specifiedImage shape==>",specifiedImage.shape)
             data = glob('./datasets/first_run/real_image/*.jpg')
             batch_idxs = min(len(data), args.train_size) // self.batch_size
             print("batch_idxs:",batch_idxs)
@@ -414,11 +414,13 @@ class speech2vivi(object):
                 #     batch_images = np.array(batch).astype(np.float32)
                 batch_images = [imread(batch_file) for batch_file in batch_files]
                 voiceData = [np.loadtxt(imageName2VoiceName(batch_file)).reshape(13,35,1) for batch_file in batch_files]
+                batch_specific_images = [imread(self.getSpecificImage(batch_file)) for batch_file in batch_files]
                 # for batch_file in batch_files:
                 #     batch_images = batch_images.reshape(1,112,112,3)
                 #     batch_images = np.array(batch_images).astype(np.float32)
                     # batch_images = tf.reshape(batch_images,[1,112,112,3])
                 batch_images = np.array(batch_images).astype(np.float32)
+                batch_specific_images = np.array(batch_specific_images).astype(np.float32)
                 print(batch_images.shape)
                 print("real_image shape==>",batch_images.shape)
                 # voiceName = imageName2VoiceName(batch_file)
@@ -431,23 +433,23 @@ class speech2vivi(object):
                     # voiceData = tf.reshape(voiceData,[1,13,35])
                 # Update D network
                 _, summary_str = self.sess.run([d_optim, self.d_sum],
-                                               feed_dict={ self.real_image: batch_images, self.real_voice:voiceData, self.random_image: specifiedImage })
+                                               feed_dict={ self.real_image: batch_images, self.real_voice:voiceData, self.random_image: batch_specific_images })
                 self.writer.add_summary(summary_str, counter)
 
                 # Update G network
                 _, summary_str = self.sess.run([g_optim, self.merged],
-                                               feed_dict={ self.real_image: batch_images, self.real_voice:voiceData, self.random_image: specifiedImage })
+                                               feed_dict={ self.real_image: batch_images, self.real_voice:voiceData, self.random_image: batch_specific_images })
                 self.writer.add_summary(summary_str, counter)
 
                 # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
                 _, summary_str = self.sess.run([g_optim, self.merged],
-                                               feed_dict={ self.real_image: batch_images, self.real_voice:voiceData, self.random_image: specifiedImage })
+                                               feed_dict={ self.real_image: batch_images, self.real_voice:voiceData, self.random_image: batch_specific_images })
                 self.writer.add_summary(summary_str, counter)
 
-                errD_fake = self.d_loss_fake.eval({self.real_image: batch_images, self.real_voice:voiceData, self.random_image: specifiedImage})
-                errD_real = self.d_loss_real.eval({self.real_image: batch_images, self.real_voice:voiceData, self.random_image: specifiedImage})
-                errG_1 = self.g_loss_one.eval({self.real_image: batch_images, self.real_voice:voiceData, self.random_image: specifiedImage})
-                errG_2 = self.g_loss_two.eval({self.real_image: batch_images, self.real_voice:voiceData, self.random_image: specifiedImage})
+                errD_fake = self.d_loss_fake.eval({self.real_image: batch_images, self.real_voice:voiceData, self.random_image: batch_specific_images})
+                errD_real = self.d_loss_real.eval({self.real_image: batch_images, self.real_voice:voiceData, self.random_image: batch_specific_images})
+                errG_1 = self.g_loss_one.eval({self.real_image: batch_images, self.real_voice:voiceData, self.random_image: batch_specific_images})
+                errG_2 = self.g_loss_two.eval({self.real_image: batch_images, self.real_voice:voiceData, self.random_image: batch_specific_images})
 
                 counter += 1
                 print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f g_loss: %.8f" \
@@ -455,7 +457,7 @@ class speech2vivi(object):
                         time.time() - start_time, errD_fake+errD_real, errG_1, errG_2))
                 train_fake_dir = "/home/train_fake/";
                 # so_save_image(self.fake_image, getTrainImgFakeName(train_fake_dir, counter))
-                temp_fake_image = self.sess.run([self.fake_image],feed_dict={self.real_image: batch_images, self.real_voice:voiceData, self.random_image: specifiedImage})
+                temp_fake_image = self.sess.run([self.fake_image],feed_dict={self.real_image: batch_images, self.real_voice:voiceData, self.random_image: batch_specific_images})#TODO
                 # {self.sample_random_image: specifiedSmapleImage, self.sample_real_voice: voiceData})
                 # temp_fake_image = np.reshape(temp_fake_image,[112,112,3])
                 # so_save_image(temp_fake_image,"/home/jackform/workspace/meiliyuyin/fake.jpg")
@@ -463,12 +465,34 @@ class speech2vivi(object):
                 # so_save_image(temp_real_image,"/home/jackform/workspace/meiliyuyin/real.jpg")
 
 
-                if np.mod(counter, 100) == 1:
+                if np.mod(counter, 50) == 0:
                     print("start to sample")
                     self.sample_model2(args.sample_dir, epoch, idx)
 
-                if np.mod(counter, 5) == 2:
+                if np.mod(counter, 50) == 0:
                     self.save(args.checkpoint_dir, counter)
+
+
+
+    # 根据当前image名字00xx00xx，获取第一帧00xx0001,第一帧没有，按顺序获取，不包含自己，没有则返会-1
+    def getSpecificImage(self,trainImage):
+        targetName = trainImage #FIXME
+        print(" trainImage: " + trainImage)
+        baseName = os.path.basename(trainImage)
+        # dirName = os.path.dirname(trainImage)
+        temp = baseName.split('.')
+        high4 = temp[0][0:4]
+        realImageDir = "./datasets/first_run/real_image"
+        XXXXimages = glob(realImageDir + "/" + high4 + "*.jpg")
+        # print(" cout: *.jpg" +len(XXXXimages).__str__())
+        for tempImg in XXXXimages:
+            if tempImg == baseName:
+                continue
+            else:
+                targetName = tempImg
+                break
+        print(" targetName: " + targetName)
+        return targetName
 
     def load_random_samples(self):
         data = np.random.choice(glob('./datasets/{}/val/*.jpg'.format(self.dataset_name)), self.batch_size)
@@ -497,13 +521,13 @@ class speech2vivi(object):
 
     def sample_model2(self, sample_dir, epoch, idx):
 
-        specifiedSmapleImagePath = "./datasets/first_run/sample/specified01.jpg"
-        sample_mp3               = "./datasets/first_run/sample/specified01.mp3"
-        out_mp4="./datasets/first_run/sample/specified01.mp4"
+        specifiedSmapleImagePath = "./datasets/first_run/sample/K.jpg"
+        sample_mp3               = "./datasets/first_run/sample/K.mp3"
+        out_mp4="./datasets/first_run/sample/K.mp4"
 
         gen_sample_voices = "./datasets/first_run/sample/gen_sample_voices/"#*.txt
         gen_sample_images = "./datasets/first_run/sample/gen_sample_images/"#*.jpg
-        gen_sample_images_his = "./datasets/first_run/sample/gen_sample_images_his/"  # *.jpg 历史数据
+       #gen_sample_images_his = "./datasets/first_run/sample/gen_sample_images_his/"  # *.jpg 历史数据
         #pic
         specifiedSmapleImage = imread(specifiedSmapleImagePath)
         specifiedSmapleImage = specifiedSmapleImage.reshape(1, 112, 112, 3)
@@ -521,7 +545,7 @@ class speech2vivi(object):
             # print(tf.shape(samples))
             samples = np.reshape(samples,[112,112,3])
             so_save_image(samples, getSampleImgName(voicepath,gen_sample_images))
-            so_save_image(samples, getSampleImgNameHis(voicepath, gen_sample_images_his, epoch, idx, ))#历史记录
+            # so_save_image(samples, getSampleImgNameHis(voicepath, gen_sample_images_his, epoch, idx, ))#历史记录
             # print("[Sample] d_loss: {:.8f}, g_loss: {:.8f}".format(d_loss, g_loss))
         ffmpegGenVideo(imageSlicesDir=gen_sample_images,mp3SampleFile=sample_mp3,outfile=out_mp4)
 
