@@ -19,7 +19,7 @@ parser.add_argument('--input_nc', dest='input_nc', type=int, default=3, help='# 
 parser.add_argument('--output_nc', dest='output_nc', type=int, default=3, help='# of output image channels')
 parser.add_argument('--niter', dest='niter', type=int, default=200, help='# of iter at starting learning rate')
 parser.add_argument('--lr_g', dest='lr_g', type=float, default=0.0001, help='initial learning rate for adam')
-parser.add_argument('--lr_d', dest='lr_d', type=float, default=0.00001, help='initial learning rate for adam')
+parser.add_argument('--lr_d', dest='lr_d', type=float, default=0.0001, help='initial learning rate for adam')
 parser.add_argument('--beta1', dest='beta1', type=float, default=0.5, help='momentum term of adam')
 parser.add_argument('--flip', dest='flip', type=bool, default=True, help='if flip the images for data argumentation')
 parser.add_argument('--which_direction', dest='which_direction', default='AtoB', help='AtoB or BtoA')
